@@ -13,6 +13,7 @@ use openpgp::types::SignatureType;
 use openpgp_card::card_do::TouchPolicy;
 use openpgp_card::KeyType;
 use openpgp_card_sequoia::{sq_util, state::Open, Card};
+use yubikey_management::{Application, YkManagement};
 
 /// Result Generic Type for the module.
 pub(crate) type Result<T> = std::result::Result<T, JceError>;
@@ -368,7 +369,11 @@ pub(crate) fn parse_and_move_a_key(
     Ok(true)
 }
 
-pub(crate) fn change_otp(_value: bool) -> Result<bool> {
-    // FIXME: implement - in backend?
-    unimplemented!()
+pub(crate) fn change_otp(value: bool) -> Result<bool> {
+    let mut card = first_pcsc_card()?;
+
+    let mut ykm = YkManagement::select(card.into_card())?;
+    ykm.applications_change_usb(&[Application::Otp], value)?;
+
+    Ok(true)
 }
