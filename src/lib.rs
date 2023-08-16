@@ -49,9 +49,9 @@ use openpgp::types::SignatureType;
 use openpgp::types::SymmetricAlgorithm;
 use openpgp::KeyHandle;
 use openpgp::Packet;
-use openpgp_card::card_do::TouchPolicy;
-use openpgp_card::KeyType;
 use openpgp_card_sequoia::state::Open;
+use openpgp_card_sequoia::types::KeyType;
+use openpgp_card_sequoia::types::TouchPolicy;
 use openpgp_card_sequoia::Card;
 
 mod scard;
@@ -87,8 +87,8 @@ impl std::convert::From<std::fmt::Error> for JceError {
     }
 }
 
-impl std::convert::From<openpgp_card::Error> for JceError {
-    fn from(err: openpgp_card::Error) -> JceError {
+impl std::convert::From<openpgp_card_sequoia::types::Error> for JceError {
+    fn from(err: openpgp_card_sequoia::types::Error) -> JceError {
         JceError {
             msg: err.to_string(),
         }
@@ -798,11 +798,10 @@ fn certify_key(
                         true => {
                             let card = card_open.as_mut().unwrap();
                             let mut tx = card.transaction()?;
-                            tx.verify_user_for_signing(&password)?;
 
-                            let mut sign = tx.signing_card().ok_or(JceError::new(
-                                "Failed to switch card to Sign mode".to_string(),
-                            ))?;
+                            let mut sign = tx.to_signing_card(&password).map_err(|_| {
+                                JceError::new("Failed to switch card to Sign mode".to_string())
+                            })?;
 
                             let mut card_signer =
                                 sign.signer(&|| println!("Touch confirmation needed for signing"))?;
